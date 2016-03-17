@@ -1,0 +1,15 @@
+[general]
+name = Freehand raster georeferencer
+qgisminimumversion = 2.2
+description = Interactive georeferencing of rasters
+version = 0.2.0
+author = Guilhem Vellut
+email = guilhem.vellut@gmail.com
+tags = 
+homepage = 
+tracker = 
+repository = 
+icon = icon.png
+experimental = False
+deprecated = False
+

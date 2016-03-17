@@ -1,0 +1,7 @@
+*.pyc
+ui_*.py
+resources_rc.py 
+*.swp
+.DS_Store
+
+
