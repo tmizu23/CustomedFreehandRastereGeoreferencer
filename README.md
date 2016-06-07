@@ -16,7 +16,7 @@ In QGIS, open the "Plugins" > "Manage and install plugin" dialog. Install the "F
     - On Windows, launch the OSGeo4W Shell. On Unix, launch a command line and make sure the PyQT tools (pyuic4 and pyrcc4) are on the PATH
     - Go to the plugin directory
     - Launch "build.bat" or "build.sh"
-4. The plugin should now be listed in the "Plugins" > "Manage and install plugin" dialog
+4. The next time QGIS is opened, the plugin should be listed in the "Plugins" > "Manage and install plugin" dialog
 
 # Documentation
 
