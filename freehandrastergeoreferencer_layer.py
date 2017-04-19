@@ -17,7 +17,7 @@ class FreehandRasterGeoreferencerLayer(QgsPluginLayer):
  
     LAYER_TYPE = "FreehandRasterGeoreferencerLayer"
      
-    def __init__(self, plugin, filepath, title, screenExtent):
+    def __init__(self, plugin, filepath, title, screenExtent,useScale, scale, dpi):
         QgsPluginLayer.__init__(self, FreehandRasterGeoreferencerLayer.LAYER_TYPE, title)
         self.plugin = plugin
         self.iface = plugin.iface
@@ -40,12 +40,18 @@ class FreehandRasterGeoreferencerLayer(QgsPluginLayer):
         self.xScale = 1.0
         self.yScale = 1.0
         
+        self.useScale = useScale
+        self.scale = scale
+        self.dpi = dpi
+       
         self.error = False
         self.initializing = False
         self.initialized = False
         self.initializeLayer(screenExtent)
         self._extent = None
-    
+
+
+
     def setScale(self, xScale, yScale):
         self.xScale = xScale
         self.yScale = yScale
@@ -161,10 +167,15 @@ class FreehandRasterGeoreferencerLayer(QgsPluginLayer):
             self.setupCrs()
                 
     def resetScale(self, sw, sh):
-        iw = self.image.width()
-        ih = self.image.height()
-        wratio = sw / iw
-        hratio = sh / ih
+        if self.useScale:
+            meter_per_inch = 0.0254
+            wratio = self.scale*meter_per_inch/self.dpi
+            hratio = self.scale*meter_per_inch/self.dpi
+        else:
+            iw = self.image.width()
+            ih = self.image.height()
+            wratio = sw / iw
+            hratio = sh / ih
         
         if wratio > hratio:
             # takes all height of current extent
