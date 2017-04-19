@@ -108,6 +108,9 @@
    </property>
   </widget>
   <widget class="QDoubleSpinBox" name="doubleSpinBoxScale">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="geometry">
     <rect>
      <x>240</x>
@@ -130,6 +133,9 @@
    </property>
   </widget>
   <widget class="QDoubleSpinBox" name="doubleSpinBoxDPI">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="geometry">
     <rect>
      <x>370</x>
