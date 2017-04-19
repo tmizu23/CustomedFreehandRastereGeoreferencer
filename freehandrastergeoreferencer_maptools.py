@@ -245,8 +245,10 @@ class ScaleRasterMapTool(QgsMapToolEmitPoint):
         dY = self.endPoint.y() - self.startPoint.y()
         xScale = 1.0 - (dX / (self.width * 1.1)) 
         yScale = 1.0 - (dY / (self.height * 1.1))
-        
-        return (xScale, yScale)
+
+        scale = min(xScale, yScale)
+        return (scale, scale)
+        # return (xScale, yScale)
 
     def showScaling(self, xScale, yScale):
         if xScale == 0 and yScale == 0:
