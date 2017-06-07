@@ -120,7 +120,7 @@ class RotateRasterMapTool(QgsMapToolEmitPoint):
         self.rubberBandExtent = QgsRubberBand(self.canvas, QGis.Line)
         self.rubberBandExtent.setColor(Qt.red)
         self.rubberBandExtent.setWidth(1)
-        
+        self.ByValue = True #for control spinbox event
         self.reset()
         
     def setLayer(self, layer):
@@ -129,11 +129,18 @@ class RotateRasterMapTool(QgsMapToolEmitPoint):
     def undo(self):
         rotation = -1.0*self.undoRotation
         self.undoRotation = 0 #undo is only one time
+        self.ByValue = False # only change spinbox value. For pass value change event.
+        val = self.layer.rotation + rotation
+        if val > 180:
+            val = val - 360
+        self.iface.mainWindow().findChild(QDoubleSpinBox, 'spinbox').setValue(val)
+        QgsMessageLog.logMessage("{}".format(rotation), "test", QgsMessageLog.INFO)
+
         self.layer.setRotation(self.layer.rotation + rotation)
         self.iface.legendInterface().setLayerVisible(self.layer, self.isLayerVisible)
         self.layer.repaint()
         self.layer.commitTransformParameters()
-        QgsMessageLog.logMessage("{}".format(rotation), "test", QgsMessageLog.INFO)
+
 
     def reset(self):
         self.startPoint = self.endPoint = None
@@ -141,6 +148,21 @@ class RotateRasterMapTool(QgsMapToolEmitPoint):
         self.rubberBandExtent.reset(QGis.Line)
         self.rasterShadow.reset()
         self.layer = None
+
+    def spinboxValueChangeEvent(self,val):
+        if self.ByValue:
+            rotation = val
+            self.undoRotation = rotation - self.layer.rotation
+
+            self.isLayerVisible = self.iface.legendInterface().isLayerVisible(self.layer)
+            self.iface.legendInterface().setLayerVisible(self.layer, False)
+            self.layer.setRotation(rotation)
+            self.iface.legendInterface().setLayerVisible(self.layer, self.isLayerVisible)
+            self.layer.repaint()
+            self.layer.commitTransformParameters()
+            QgsMessageLog.logMessage("{}".format(rotation), "test", QgsMessageLog.INFO)
+        else:
+            self.ByValue = True
 
     def canvasPressEvent(self, e):
         self.startY = e.pos().y()
@@ -163,12 +185,18 @@ class RotateRasterMapTool(QgsMapToolEmitPoint):
         
         rotation = self.computeRotation()
         self.undoRotation = rotation
+        self.ByValue = False # only change spinbox value. For pass value change event.
+        val = self.layer.rotation + rotation
+        if val > 180:
+            val = val - 360
+        self.iface.mainWindow().findChild(QDoubleSpinBox,'spinbox').setValue(val)
         self.layer.setRotation(self.layer.rotation + rotation)
         
         self.iface.legendInterface().setLayerVisible(self.layer, self.isLayerVisible)
         self.layer.repaint()
         
         self.layer.commitTransformParameters()
+
 
     def canvasMoveEvent(self, e):
         if not self.isEmittingPoint:
