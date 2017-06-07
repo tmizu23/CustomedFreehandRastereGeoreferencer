@@ -29,6 +29,14 @@ class MoveRasterMapTool(QgsMapToolEmitPoint):
     def setLayer(self, layer):
         self.layer = layer
 
+    def undo(self):
+        x = self.undoX
+        y = self.undoY
+        self.layer.setCenter(QgsPoint(x, y))
+        self.iface.legendInterface().setLayerVisible(self.layer, self.isLayerVisible)
+        self.layer.repaint()
+        self.layer.commitTransformParameters()
+
     def reset(self):
         self.startPoint = self.endPoint = None
         self.isEmittingPoint = False
@@ -42,6 +50,8 @@ class MoveRasterMapTool(QgsMapToolEmitPoint):
         self.endPoint = self.startPoint
         self.isEmittingPoint = True
         self.originalCenter = self.layer.center
+        self.undoX = self.originalCenter.x()
+        self.undoY = self.originalCenter.y()
         # this tool do the displacement itself TODO update so it is done by transformed coordinates + new center)
         self.originalCornerPoints = self.layer.transformedCornerCoordinates(*self.layer.transformParameters())
         
@@ -49,7 +59,7 @@ class MoveRasterMapTool(QgsMapToolEmitPoint):
         self.iface.legendInterface().setLayerVisible(self.layer, False)
         
         self.showDisplacement(self.startPoint, self.endPoint)
-        
+        #QgsMessageLog.logMessage("{},{}".format(self.undoX,self.undoY), "debug",QgsMessageLog.INFO)
 
     def canvasReleaseEvent(self, e):
         self.isEmittingPoint = False
@@ -116,6 +126,15 @@ class RotateRasterMapTool(QgsMapToolEmitPoint):
     def setLayer(self, layer):
         self.layer = layer
 
+    def undo(self):
+        rotation = -1.0*self.undoRotation
+        self.undoRotation = 0 #undo is only one time
+        self.layer.setRotation(self.layer.rotation + rotation)
+        self.iface.legendInterface().setLayerVisible(self.layer, self.isLayerVisible)
+        self.layer.repaint()
+        self.layer.commitTransformParameters()
+        QgsMessageLog.logMessage("{}".format(rotation), "test", QgsMessageLog.INFO)
+
     def reset(self):
         self.startPoint = self.endPoint = None
         self.isEmittingPoint = False
@@ -143,6 +162,7 @@ class RotateRasterMapTool(QgsMapToolEmitPoint):
         self.rasterShadow.reset()
         
         rotation = self.computeRotation()
+        self.undoRotation = rotation
         self.layer.setRotation(self.layer.rotation + rotation)
         
         self.iface.legendInterface().setLayerVisible(self.layer, self.isLayerVisible)
@@ -198,6 +218,16 @@ class ScaleRasterMapTool(QgsMapToolEmitPoint):
     def setLayer(self, layer):
         self.layer = layer
 
+    def undo(self):
+        xScale = 1.0/self.undoXscale
+        yScale = 1.0/self.undoYscale
+        self.undoXscale = 1.0 # undo is only once time
+        self.undoYscale = 1.0 # undo is only once time
+        self.layer.setScale(xScale * self.layer.xScale/self.undoXscale, yScale * self.layer.yScale)
+        self.iface.legendInterface().setLayerVisible(self.layer, self.isLayerVisible)
+        self.layer.repaint()
+        self.layer.commitTransformParameters()
+
     def reset(self):
         self.startPoint = self.endPoint = None
         self.isEmittingPoint = False
@@ -225,6 +255,8 @@ class ScaleRasterMapTool(QgsMapToolEmitPoint):
         self.rasterShadow.reset()
         
         xScale, yScale = self.computeScaling()
+        self.undoXscale  = xScale
+        self.undoYscale = yScale
         self.layer.setScale(xScale * self.layer.xScale, yScale * self.layer.yScale)
         
         self.iface.legendInterface().setLayerVisible(self.layer, self.isLayerVisible)
@@ -245,8 +277,10 @@ class ScaleRasterMapTool(QgsMapToolEmitPoint):
         dY = self.endPoint.y() - self.startPoint.y()
         xScale = 1.0 - (dX / (self.width * 1.1)) 
         yScale = 1.0 - (dY / (self.height * 1.1))
-        
-        return (xScale, yScale)
+
+        scale = min(xScale, yScale)
+        return (scale, scale)
+        # return (xScale, yScale)
 
     def showScaling(self, xScale, yScale):
         if xScale == 0 and yScale == 0:
@@ -289,6 +323,20 @@ class AdjustRasterMapTool(QgsMapToolEmitPoint):
     def setLayer(self, layer):
         self.layer = layer
 
+    def undo(self):
+        center = self.undoCenter
+        xScale = 1.0/self.undoXscale
+        yScale = 1.0/self.undoYscale
+        self.undoXscale = 1.0 # undo is onle one time
+        self.undoYscale = 1.0 # undo is only one time
+        self.layer.setCenter(center)
+        self.layer.setScale(xScale * self.layer.xScale, yScale * self.layer.yScale)
+
+        self.iface.legendInterface().setLayerVisible(self.layer, self.isLayerVisible)
+        self.layer.repaint()
+
+        self.layer.commitTransformParameters()
+
     def reset(self):
         self.startPoint = self.endPoint = None
         self.isEmittingPoint = False
@@ -329,6 +377,7 @@ class AdjustRasterMapTool(QgsMapToolEmitPoint):
         self.iface.legendInterface().setLayerVisible(self.layer, False)
         
         adjustment = self.computeAdjustment()
+        self.undoCenter, _, _ = adjustment
         self.showAdjustment(*adjustment)
         
     def minDistance(self, distances):
@@ -358,6 +407,8 @@ class AdjustRasterMapTool(QgsMapToolEmitPoint):
         self.rasterShadow.reset()
         
         center, xScale, yScale = self.computeAdjustment()
+        self.undoXscale = xScale
+        self.undoYscale = yScale
         self.layer.setCenter(center)
         self.layer.setScale(xScale * self.layer.xScale, yScale * self.layer.yScale)
         

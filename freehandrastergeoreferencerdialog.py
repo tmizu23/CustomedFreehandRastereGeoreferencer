@@ -38,10 +38,17 @@ class FreehandRasterGeoreferencerDialog(QtGui.QDialog, Ui_FreehandRasterGeorefer
         self.setupUi(self)
         
         QObject.connect(self.pushButtonBrowse,SIGNAL("clicked()"),self.showBrowserDialog)
+        QObject.connect(self.checkBoxUseScale,SIGNAL("clicked()"),self.setUseScale)
 
     def clear(self):
         self.lineEditImagePath.setText("")
-        
+        self.checkBoxUseScale.setChecked(False)
+    
+    def setUseScale(self):
+        state = self.checkBoxUseScale.isChecked()
+        self.doubleSpinBoxScale.setEnabled(state)
+        self.doubleSpinBoxDPI.setEnabled(state)
+
     def showBrowserDialog(self):
         bDir,found = QgsProject.instance().readEntry(utils.SETTINGS_KEY, 
                     utils.SETTING_BROWSER_RASTER_DIR, None)
@@ -49,7 +56,7 @@ class FreehandRasterGeoreferencerDialog(QtGui.QDialog, Ui_FreehandRasterGeorefer
             bDir = os.path.expanduser("~")
             
         qDebug(repr(bDir))
-        filepath = u'%s'%(QFileDialog.getOpenFileName(self, "Select image", bDir, "Images (*.png *.bmp *.jpg)"))
+        filepath = u'%s'%(QFileDialog.getOpenFileName(self, "Select image", bDir, "Images (*.png *.bmp *.jpg *.tif)"))
         self.lineEditImagePath.setText(filepath)
         
         if filepath:
@@ -78,7 +85,7 @@ class FreehandRasterGeoreferencerDialog(QtGui.QDialog, Ui_FreehandRasterGeorefer
         self.imagePath = self.lineEditImagePath.text()
         _, extension = os.path.splitext(self.imagePath)
         extension = string.lower(extension)
-        if not os.path.isfile(self.imagePath) or (extension != ".jpg" and extension != ".bmp" and extension != ".png"):
+        if not os.path.isfile(self.imagePath) or (extension != ".jpg" and extension != ".bmp" and extension != ".png" and extension != ".tif"):
             result = False
             if len(details) > 0:
                 details += '\n'

@@ -94,6 +94,10 @@ class FreehandRasterGeoreferencer(object):
             u"Export raster with world file", self.iface.mainWindow())
         self.actionExport.triggered.connect(self.exportAsRaster)
 
+        self.actionUndo = QAction(QIcon(":/plugins/freehandrastergeoreferencer/iconUndo.png"),
+            u"Undo", self.iface.mainWindow())
+        self.actionUndo.triggered.connect(self.undo)
+        self.actionUndo.setShortcut("Ctrl+Z")
         # Add toolbar button and menu item for AddLayer
         self.iface.layerToolBar().addAction(self.actionAddLayer)
         self.iface.insertAddLayerAction(self.actionAddLayer)
@@ -109,6 +113,7 @@ class FreehandRasterGeoreferencer(object):
         self.toolbar.addAction(self.actionDecreaseTransparency)
         self.toolbar.addAction(self.actionIncreaseTransparency)
         self.toolbar.addAction(self.actionExport)
+        self.toolbar.addAction(self.actionUndo)
         
         # Register plugin layer type
         self.layerType = FreehandRasterGeoreferencerLayerType(self)
@@ -162,6 +167,7 @@ class FreehandRasterGeoreferencer(object):
             self.actionDecreaseTransparency.setEnabled(True)
             self.actionIncreaseTransparency.setEnabled(True)
             self.actionExport.setEnabled(True)
+            self.actionUndo.setEnabled(True)
             
             if self.currentTool:
                 self.currentTool.reset()
@@ -174,6 +180,7 @@ class FreehandRasterGeoreferencer(object):
             self.actionDecreaseTransparency.setEnabled(False)
             self.actionIncreaseTransparency.setEnabled(False)
             self.actionExport.setEnabled(False)
+            self.actionUndo.setEnabled(False)
                 
             if self.currentTool:
                 self.currentTool.reset()
@@ -195,10 +202,12 @@ class FreehandRasterGeoreferencer(object):
             
         imageName = os.path.basename(imagePath)
         imageName,_ = os.path.splitext(imageName)
-        
+        useScale = self.dialogAddLayer.checkBoxUseScale.isChecked()
+        scale = self.dialogAddLayer.doubleSpinBoxScale.value()
+        dpi = self.dialogAddLayer.doubleSpinBoxDPI.value()
         screenExtent = self.iface.mapCanvas().extent()
         
-        layer = FreehandRasterGeoreferencerLayer(self, imagePath , imageName, screenExtent)
+        layer = FreehandRasterGeoreferencerLayer(self, imagePath , imageName, screenExtent, useScale, scale, dpi)
         if layer.isValid():
             QgsMapLayerRegistry.instance().addMapLayer(layer)
             self.layers[layer.id()] = layer
@@ -244,3 +253,9 @@ class FreehandRasterGeoreferencer(object):
         layer = self.iface.legendInterface().currentLayer()
         exportCommand = ExportAsRasterCommand(self.iface)
         exportCommand.exportAsRaster(layer)
+
+    def undo(self):
+        if self.currentTool:
+            layer = self.iface.legendInterface().currentLayer()
+            self.currentTool.undo()
+            self.currentTool.setLayer(layer)
