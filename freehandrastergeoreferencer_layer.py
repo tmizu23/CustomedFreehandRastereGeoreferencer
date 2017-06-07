@@ -366,7 +366,7 @@ class FreehandRasterGeoreferencerLayerType(QgsPluginLayerType):
         self.plugin = plugin
 
     def createLayer(self):
-        return FreehandRasterGeoreferencerLayer(self.plugin, None, "", None)
+        return FreehandRasterGeoreferencerLayer(self.plugin, None, "", None, False, None, None)
 
     def showLayerProperties(self, layer):
         from propertiesdialog import PropertiesDialog
