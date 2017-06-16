@@ -145,9 +145,24 @@ class FreehandRasterGeoreferencerLayer(QgsPluginLayer):
 
                 del loadErrorDialog
 
+            fileInfo = QFileInfo(filepath)
+            ext = fileInfo.suffix()
+            if ext == "pdf":
+                s = QSettings()
+                oldValidation = s.value("/Projections/defaultBehaviour")
+                s.setValue("/Projections/defaultBehaviour", "useGlobal")
+                path = fileInfo.filePath()
+                baseName = fileInfo.baseName()
+                layer = QgsRasterLayer(path, baseName)
+                #layer.setCrs(QgsCoordinateReferenceSystem(4326, QgsCoordinateReferenceSystem.EpsgCrsId))
+                self.image = layer.previewAsImage(QSize(layer.width(),layer.height()))
+                s.setValue("/Projections/defaultBehaviour", oldValidation)
+            else:
+                reader = QImageReader(filepath)
+                self.image = reader.read()
 
-            reader = QImageReader(filepath)
-            self.image = reader.read()
+
+
             self.initialized = True
             self.initializing = False
 
