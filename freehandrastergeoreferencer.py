@@ -33,7 +33,6 @@ from freehandrastergeoreferencer_maptools import *
 import utils
 from freehandrastergeoreferencer_commands import ExportAsRasterCommand
 
-
 class FreehandRasterGeoreferencer(object):
     
     PLUGIN_MENU = u"&Freehand Raster Georeferencer"
@@ -55,7 +54,13 @@ class FreehandRasterGeoreferencer(object):
             u"Add raster for interactive georeferencing", self.iface.mainWindow())
         self.actionAddLayer.setObjectName("FreehandRasterGeoreferencingLayerPlugin_AddLayer")
         self.actionAddLayer.triggered.connect(self.addLayer)
-        
+
+        self.actionReplaceRaster = QAction(
+            QIcon(":/plugins/freehandrastergeoreferencer/iconReplace.png"),
+            u"Replace raster", self.iface.mainWindow())
+        self.actionReplaceRaster.setObjectName("FreehandRasterGeoreferencingLayerPlugin_ReplaceRaster")
+        self.actionReplaceRaster.triggered.connect(self.replaceRaster)
+
         self.actionMoveRaster = QAction(QIcon(":/plugins/freehandrastergeoreferencer/iconMove.png"),
             u"Move raster", self.iface.mainWindow())
         self.actionMoveRaster.setObjectName("FreehandRasterGeoreferencingLayerPlugin_MoveRaster")
@@ -102,6 +107,7 @@ class FreehandRasterGeoreferencer(object):
         # create toolbar for this plugin
         self.toolbar = self.iface.addToolBar("Freehand raster georeferencing")
         self.toolbar.addAction(self.actionAddLayer)
+        self.toolbar.addAction(self.actionReplaceRaster)
         self.toolbar.addAction(self.actionMoveRaster)
         self.toolbar.addAction(self.actionRotateRaster)
         self.toolbar.addAction(self.actionScaleRaster)
@@ -155,6 +161,7 @@ class FreehandRasterGeoreferencer(object):
     def checkCurrentLayerIsPluginLayer(self):
         layer = self.iface.legendInterface().currentLayer()
         if layer and layer.type() == QgsMapLayer.PluginLayer and layer.pluginLayerType() == FreehandRasterGeoreferencerLayer.LAYER_TYPE:
+            self.actionReplaceRaster.setEnabled(True)
             self.actionMoveRaster.setEnabled(True)
             self.actionRotateRaster.setEnabled(True)
             self.actionScaleRaster.setEnabled(True)
@@ -167,6 +174,7 @@ class FreehandRasterGeoreferencer(object):
                 self.currentTool.reset()
                 self.currentTool.setLayer(layer)
         else:
+            self.actionReplaceRaster.setEnabled(False)
             self.actionMoveRaster.setEnabled(False)
             self.actionRotateRaster.setEnabled(False)
             self.actionScaleRaster.setEnabled(False)
@@ -205,7 +213,20 @@ class FreehandRasterGeoreferencer(object):
             QgsMapLayerRegistry.instance().addMapLayer(layer)
             self.layers[layer.id()] = layer
             self.iface.legendInterface().setCurrentLayer(layer)
-        
+
+    def replaceRaster(self):
+        self.dialogAddLayer.disableOptions()
+        self.dialogAddLayer.show()
+        result = self.dialogAddLayer.exec_()
+        if result == 1:
+            imagePath = self.dialogAddLayer.lineEditImagePath.text()
+            imageName = os.path.basename(imagePath)
+            imageName, _ = os.path.splitext(imageName)
+            layer = self.iface.legendInterface().currentLayer()
+            layer.setLayerName(imageName)
+            layer = self.layers[layer.id()]
+            layer.replaceRaster(imagePath, imageName)
+
     def moveRaster(self):
         self.currentTool = self.moveTool
         layer = self.iface.legendInterface().currentLayer()
@@ -246,3 +267,4 @@ class FreehandRasterGeoreferencer(object):
         layer = self.iface.legendInterface().currentLayer()
         exportCommand = ExportAsRasterCommand(self.iface)
         exportCommand.exportAsRaster(layer)
+

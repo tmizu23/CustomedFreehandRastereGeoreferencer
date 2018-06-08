@@ -51,6 +51,16 @@ class FreehandRasterGeoreferencerLayer(QgsPluginLayer):
         self._extent = None
 
 
+    def replaceRaster(self, filepath, title):
+        self.title = title
+        self.filepath = filepath
+
+        # set custom properties
+        self.setCustomProperty("title", title)
+        self.setCustomProperty("filepath", self.filepath)
+        reader = QImageReader(filepath)
+        self.image = reader.read()
+        self.repaint()
 
     def setScale(self, xScale, yScale):
         self.xScale = xScale
@@ -358,8 +368,8 @@ class FreehandRasterGeoreferencerLayer(QgsPluginLayer):
         QgsProject.instance().dirty(True)
         self.setTransparency(val)
         self.emit(SIGNAL("repaintRequested()"))
-     
- 
+
+
 class FreehandRasterGeoreferencerLayerType(QgsPluginLayerType):
     def __init__(self, plugin):
         QgsPluginLayerType.__init__(self, FreehandRasterGeoreferencerLayer.LAYER_TYPE)
