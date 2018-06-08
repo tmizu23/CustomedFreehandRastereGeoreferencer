@@ -42,7 +42,7 @@ class FreehandRasterGeoreferencerDialog(QtGui.QDialog, Ui_FreehandRasterGeorefer
 
     def clear(self):
         self.lineEditImagePath.setText("")
-        self.checkBoxUseScale.setChecked(False)
+        self.checkBoxUseScale.setChecked(True)
     
     def setUseScale(self):
         state = self.checkBoxUseScale.isChecked()

@@ -80,6 +80,9 @@
    <property name="text">
     <string>Use Image scale as default</string>
    </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
   </widget>
   <widget class="QLabel" name="label_2">
    <property name="geometry">
@@ -109,7 +112,7 @@
   </widget>
   <widget class="QDoubleSpinBox" name="doubleSpinBoxScale">
    <property name="enabled">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="geometry">
     <rect>
@@ -134,7 +137,7 @@
   </widget>
   <widget class="QDoubleSpinBox" name="doubleSpinBoxDPI">
    <property name="enabled">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="geometry">
     <rect>
@@ -154,7 +157,7 @@
     <double>1000.000000000000000</double>
    </property>
    <property name="value">
-    <double>72.000000000000000</double>
+    <double>200.000000000000000</double>
    </property>
   </widget>
  </widget>
