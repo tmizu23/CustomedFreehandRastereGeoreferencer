@@ -33,7 +33,7 @@ class LoadErrorDialog(QtGui.QDialog, Ui_LoadError):
             bDir = os.path.expanduser("~")
             
         qDebug(repr(bDir))
-        filepath = '%s'%(QFileDialog.getOpenFileName(self, "Select image", bDir, "Images (*.png *.bmp *.jpg *.tif)"))
+        filepath = '%s'%(QFileDialog.getOpenFileName(self, "Select image", bDir, "Images (*.png *.bmp *.jpg *.tif *.pdf)"))
         self.lineEditImagePath.setText(filepath)
         
         if filepath:
@@ -65,7 +65,7 @@ class LoadErrorDialog(QtGui.QDialog, Ui_LoadError):
         self.imagePath = self.lineEditImagePath.text()
         _, extension = os.path.splitext(self.imagePath)
         extension = string.lower(extension)
-        if not os.path.isfile(self.imagePath) or (extension != ".jpg" and extension != ".bmp" and extension != ".png" and extension != ".tif"):
+        if not os.path.isfile(self.imagePath) or (extension != ".jpg" and extension != ".bmp" and extension != ".png" and extension != ".tif" and extension != ".pdf"):
             result = False
             if len(details) > 0:
                 details += '\n'

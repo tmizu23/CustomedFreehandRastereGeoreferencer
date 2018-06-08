@@ -29,6 +29,14 @@ class MoveRasterMapTool(QgsMapToolEmitPoint):
     def setLayer(self, layer):
         self.layer = layer
 
+    def undo(self):
+        x = self.undoX
+        y = self.undoY
+        self.layer.setCenter(QgsPoint(x, y))
+        self.iface.legendInterface().setLayerVisible(self.layer, self.isLayerVisible)
+        self.layer.repaint()
+        self.layer.commitTransformParameters()
+
     def reset(self):
         self.startPoint = self.endPoint = None
         self.isEmittingPoint = False
@@ -42,6 +50,8 @@ class MoveRasterMapTool(QgsMapToolEmitPoint):
         self.endPoint = self.startPoint
         self.isEmittingPoint = True
         self.originalCenter = self.layer.center
+        self.undoX = self.originalCenter.x()
+        self.undoY = self.originalCenter.y()
         # this tool do the displacement itself TODO update so it is done by transformed coordinates + new center)
         self.originalCornerPoints = self.layer.transformedCornerCoordinates(*self.layer.transformParameters())
         
@@ -49,7 +59,7 @@ class MoveRasterMapTool(QgsMapToolEmitPoint):
         self.iface.legendInterface().setLayerVisible(self.layer, False)
         
         self.showDisplacement(self.startPoint, self.endPoint)
-        
+        #QgsMessageLog.logMessage("{},{}".format(self.undoX,self.undoY), "debug",QgsMessageLog.INFO)
 
     def canvasReleaseEvent(self, e):
         self.isEmittingPoint = False
@@ -110,11 +120,28 @@ class RotateRasterMapTool(QgsMapToolEmitPoint):
         self.rubberBandExtent = QgsRubberBand(self.canvas, QGis.Line)
         self.rubberBandExtent.setColor(Qt.red)
         self.rubberBandExtent.setWidth(1)
-        
+        self.ByValue = True #for control spinbox event
         self.reset()
         
     def setLayer(self, layer):
         self.layer = layer
+
+    def undo(self):
+        rotation = self.undoRotation
+        #self.undoRotation = 0 #undo is only one time
+        self.ByValue = False # only change spinbox value. For pass value change event.
+        val = rotation
+        if val > 180:
+            val = val - 360
+        self.iface.mainWindow().findChild(QDoubleSpinBox, 'spinbox').setValue(val)
+        self.ByValue = True
+        #QgsMessageLog.logMessage("{}".format(rotation), "test", QgsMessageLog.INFO)
+
+        self.layer.setRotation(rotation)
+        self.iface.legendInterface().setLayerVisible(self.layer, self.isLayerVisible)
+        self.layer.repaint()
+        self.layer.commitTransformParameters()
+
 
     def reset(self):
         self.startPoint = self.endPoint = None
@@ -122,6 +149,19 @@ class RotateRasterMapTool(QgsMapToolEmitPoint):
         self.rubberBandExtent.reset(QGis.Line)
         self.rasterShadow.reset()
         self.layer = None
+
+    def spinboxValueChangeEvent(self,val):
+        if self.ByValue:
+            rotation = val
+            self.undoRotation = self.layer.rotation
+
+            self.isLayerVisible = self.iface.legendInterface().isLayerVisible(self.layer)
+            self.iface.legendInterface().setLayerVisible(self.layer, False)
+            self.layer.setRotation(rotation)
+            self.iface.legendInterface().setLayerVisible(self.layer, self.isLayerVisible)
+            self.layer.repaint()
+            self.layer.commitTransformParameters()
+            #QgsMessageLog.logMessage("{}".format(rotation), "test", QgsMessageLog.INFO)
 
     def canvasPressEvent(self, e):
         self.startY = e.pos().y()
@@ -143,12 +183,20 @@ class RotateRasterMapTool(QgsMapToolEmitPoint):
         self.rasterShadow.reset()
         
         rotation = self.computeRotation()
+        self.undoRotation = self.layer.rotation
+        self.ByValue = False # only change spinbox value. For pass value change event.
+        val = self.layer.rotation + rotation
+        if val > 180:
+            val = val - 360
+        self.iface.mainWindow().findChild(QDoubleSpinBox,'spinbox').setValue(val)
+        self.ByValue = True
         self.layer.setRotation(self.layer.rotation + rotation)
         
         self.iface.legendInterface().setLayerVisible(self.layer, self.isLayerVisible)
         self.layer.repaint()
         
         self.layer.commitTransformParameters()
+
 
     def canvasMoveEvent(self, e):
         if not self.isEmittingPoint:
@@ -198,6 +246,16 @@ class ScaleRasterMapTool(QgsMapToolEmitPoint):
     def setLayer(self, layer):
         self.layer = layer
 
+    def undo(self):
+        xScale = 1.0/self.undoXscale
+        yScale = 1.0/self.undoYscale
+        self.undoXscale = 1.0 # undo is only once time
+        self.undoYscale = 1.0 # undo is only once time
+        self.layer.setScale(xScale * self.layer.xScale/self.undoXscale, yScale * self.layer.yScale)
+        self.iface.legendInterface().setLayerVisible(self.layer, self.isLayerVisible)
+        self.layer.repaint()
+        self.layer.commitTransformParameters()
+
     def reset(self):
         self.startPoint = self.endPoint = None
         self.isEmittingPoint = False
@@ -225,6 +283,8 @@ class ScaleRasterMapTool(QgsMapToolEmitPoint):
         self.rasterShadow.reset()
         
         xScale, yScale = self.computeScaling()
+        self.undoXscale  = xScale
+        self.undoYscale = yScale
         self.layer.setScale(xScale * self.layer.xScale, yScale * self.layer.yScale)
         
         self.iface.legendInterface().setLayerVisible(self.layer, self.isLayerVisible)
@@ -291,6 +351,20 @@ class AdjustRasterMapTool(QgsMapToolEmitPoint):
     def setLayer(self, layer):
         self.layer = layer
 
+    def undo(self):
+        center = self.undoCenter
+        xScale = 1.0/self.undoXscale
+        yScale = 1.0/self.undoYscale
+        self.undoXscale = 1.0 # undo is onle one time
+        self.undoYscale = 1.0 # undo is only one time
+        self.layer.setCenter(center)
+        self.layer.setScale(xScale * self.layer.xScale, yScale * self.layer.yScale)
+
+        self.iface.legendInterface().setLayerVisible(self.layer, self.isLayerVisible)
+        self.layer.repaint()
+
+        self.layer.commitTransformParameters()
+
     def reset(self):
         self.startPoint = self.endPoint = None
         self.isEmittingPoint = False
@@ -331,6 +405,7 @@ class AdjustRasterMapTool(QgsMapToolEmitPoint):
         self.iface.legendInterface().setLayerVisible(self.layer, False)
         
         adjustment = self.computeAdjustment()
+        self.undoCenter, _, _ = adjustment
         self.showAdjustment(*adjustment)
         
     def minDistance(self, distances):
@@ -360,6 +435,8 @@ class AdjustRasterMapTool(QgsMapToolEmitPoint):
         self.rasterShadow.reset()
         
         center, xScale, yScale = self.computeAdjustment()
+        self.undoXscale = xScale
+        self.undoYscale = yScale
         self.layer.setCenter(center)
         self.layer.setScale(xScale * self.layer.xScale, yScale * self.layer.yScale)
         
@@ -428,5 +505,4 @@ class AdjustRasterMapTool(QgsMapToolEmitPoint):
         self.rasterShadow.setDeltaDisplacement(dx, dy, False)
         self.rasterShadow.setDeltaScale(xScale, yScale, True)
         self.rasterShadow.show()
-        
         
