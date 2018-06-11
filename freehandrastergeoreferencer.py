@@ -33,6 +33,7 @@ from freehandrastergeoreferencer_maptools import *
 import utils
 from freehandrastergeoreferencer_commands import ExportAsRasterCommand
 
+
 class FreehandRasterGeoreferencer(object):
     
     PLUGIN_MENU = u"&Freehand Raster Georeferencer"
@@ -72,7 +73,25 @@ class FreehandRasterGeoreferencer(object):
         self.actionRotateRaster.setObjectName("FreehandRasterGeoreferencingLayerPlugin_RotateRaster")
         self.actionRotateRaster.triggered.connect(self.rotateRaster)
         self.actionRotateRaster.setCheckable(True)
-        
+
+        self.spinBox = QDoubleSpinBox(self.iface.mainWindow())
+        self.spinBox.setDecimals(1)
+        self.spinBox.setMinimum(-180)
+        self.spinBox.setMaximum(180)
+        self.spinBox.setSingleStep(0.1)
+        self.spinBox.setValue(0.0)
+        self.spinBox.setToolTip("Rotation value")
+        self.spinBox.setObjectName("spinbox")
+        #toleranceval = settings.value("/freehandEdit/tolerance", 0.000, type=float)
+        #if not toleranceval:
+        #    settings.setValue("/freehandEdit/tolerance", 0.000)
+
+        #self.spinBoxAction = self.toolbar.addWidget(self.spinBox)
+
+
+        #self.spinBoxAction.setEnabled(False)
+
+
         self.actionScaleRaster = QAction(QIcon(":/plugins/freehandrastergeoreferencer/iconScale.png"),
             u"Scale raster", self.iface.mainWindow())
         self.actionScaleRaster.setObjectName("FreehandRasterGeoreferencingLayerPlugin_ScaleRaster")
@@ -99,6 +118,10 @@ class FreehandRasterGeoreferencer(object):
             u"Export raster with world file", self.iface.mainWindow())
         self.actionExport.triggered.connect(self.exportAsRaster)
 
+        self.actionUndo = QAction(QIcon(":/plugins/freehandrastergeoreferencer/iconUndo.png"),
+            u"Undo", self.iface.mainWindow())
+        self.actionUndo.triggered.connect(self.undo)
+        self.actionUndo.setShortcut("Ctrl+Z")
         # Add toolbar button and menu item for AddLayer
         self.iface.layerToolBar().addAction(self.actionAddLayer)
         self.iface.insertAddLayerAction(self.actionAddLayer)
@@ -110,12 +133,15 @@ class FreehandRasterGeoreferencer(object):
         self.toolbar.addAction(self.actionReplaceRaster)
         self.toolbar.addAction(self.actionMoveRaster)
         self.toolbar.addAction(self.actionRotateRaster)
+        self.toolbar.addWidget(self.spinBox)
         self.toolbar.addAction(self.actionScaleRaster)
         self.toolbar.addAction(self.actionAdjustRaster)
         self.toolbar.addAction(self.actionDecreaseTransparency)
         self.toolbar.addAction(self.actionIncreaseTransparency)
         self.toolbar.addAction(self.actionExport)
-        
+        self.toolbar.addAction(self.actionUndo)
+
+
         # Register plugin layer type
         self.layerType = FreehandRasterGeoreferencerLayerType(self)
         QgsPluginLayerRegistry.instance().addPluginLayerType(self.layerType)
@@ -126,6 +152,8 @@ class FreehandRasterGeoreferencer(object):
         self.moveTool.setAction(self.actionMoveRaster)
         self.rotateTool = RotateRasterMapTool(self.iface)
         self.rotateTool.setAction(self.actionRotateRaster)
+        self.spinBox.valueChanged.connect(self.rotateTool.spinboxValueChangeEvent)
+        self.spinBox.setKeyboardTracking(False)
         self.scaleTool = ScaleRasterMapTool(self.iface)
         self.scaleTool.setAction(self.actionScaleRaster)
         self.adjustTool = AdjustRasterMapTool(self.iface)
@@ -169,6 +197,7 @@ class FreehandRasterGeoreferencer(object):
             self.actionDecreaseTransparency.setEnabled(True)
             self.actionIncreaseTransparency.setEnabled(True)
             self.actionExport.setEnabled(True)
+            self.actionUndo.setEnabled(True)
             
             if self.currentTool:
                 self.currentTool.reset()
@@ -177,11 +206,13 @@ class FreehandRasterGeoreferencer(object):
             self.actionReplaceRaster.setEnabled(False)
             self.actionMoveRaster.setEnabled(False)
             self.actionRotateRaster.setEnabled(False)
+            self.spinBox.setEnabled(False)
             self.actionScaleRaster.setEnabled(False)
             self.actionAdjustRaster.setEnabled(False)
             self.actionDecreaseTransparency.setEnabled(False)
             self.actionIncreaseTransparency.setEnabled(False)
             self.actionExport.setEnabled(False)
+            self.actionUndo.setEnabled(False)
                 
             if self.currentTool:
                 self.currentTool.reset()
@@ -213,6 +244,13 @@ class FreehandRasterGeoreferencer(object):
             QgsMapLayerRegistry.instance().addMapLayer(layer)
             self.layers[layer.id()] = layer
             self.iface.legendInterface().setCurrentLayer(layer)
+        
+    def moveRaster(self):
+        self.currentTool = self.moveTool
+        layer = self.iface.legendInterface().currentLayer()
+        self.moveTool.setLayer(layer)
+        self.iface.mapCanvas().setMapTool(self.moveTool)
+        self.spinBox.setEnabled(False)
 
     def replaceRaster(self):
         self.dialogAddLayer.disableOptions()
@@ -227,18 +265,16 @@ class FreehandRasterGeoreferencer(object):
             layer = self.layers[layer.id()]
             layer.replaceRaster(imagePath, imageName)
 
-    def moveRaster(self):
-        self.currentTool = self.moveTool
-        layer = self.iface.legendInterface().currentLayer()
-        self.moveTool.setLayer(layer)
-        self.iface.mapCanvas().setMapTool(self.moveTool)
-    
     def rotateRaster(self):
         self.currentTool = self.rotateTool
         layer = self.iface.legendInterface().currentLayer()
         self.rotateTool.setLayer(layer)
         self.iface.mapCanvas().setMapTool(self.rotateTool)
-    
+        self.spinBox.setEnabled(True)
+
+    def rotateRasterByValue(self):
+        pass
+
     def scaleRaster(self):
         self.currentTool = self.scaleTool
         layer = self.iface.legendInterface().currentLayer()
@@ -250,21 +286,30 @@ class FreehandRasterGeoreferencer(object):
         layer = self.iface.legendInterface().currentLayer()
         self.adjustTool.setLayer(layer)
         self.iface.mapCanvas().setMapTool(self.adjustTool)
-        
+        self.spinBox.setEnabled(False)
+
     def increaseTransparency(self):
         layer = self.iface.legendInterface().currentLayer()
         # clamp to 100
         tr = min(layer.transparency + 10, 100)
         layer.transparencyChanged(tr)
-    
+        self.spinBox.setEnabled(False)
+
     def decreaseTransparency(self):
         layer = self.iface.legendInterface().currentLayer()
         # clamp to 0
         tr = max(layer.transparency - 10, 0)
         layer.transparencyChanged(tr)
-    
+        self.spinBox.setEnabled(False)
+
     def exportAsRaster(self):
         layer = self.iface.legendInterface().currentLayer()
         exportCommand = ExportAsRasterCommand(self.iface)
         exportCommand.exportAsRaster(layer)
+        self.spinBox.setEnabled(False)
 
+    def undo(self):
+        if self.currentTool:
+            layer = self.iface.legendInterface().currentLayer()
+            self.currentTool.undo()
+            self.currentTool.setLayer(layer)
