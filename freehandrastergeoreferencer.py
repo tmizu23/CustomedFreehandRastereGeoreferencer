@@ -262,7 +262,6 @@ class FreehandRasterGeoreferencer(object):
             imageName, _ = os.path.splitext(imageName)
             layer = self.iface.legendInterface().currentLayer()
             layer.setLayerName(imageName)
-            layer = self.layers[layer.id()]
             layer.replaceRaster(imagePath, imageName)
 
     def rotateRaster(self):
