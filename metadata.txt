@@ -1,10 +1,10 @@
 [general]
-name = Freehand raster georeferencer
-qgisminimumversion = 2.2
+name = Customed Freehand raster georeferencer
+qgisminimumversion = 2.18
 description = Interactive georeferencing of rasters
-version = 0.2.0
-author = Guilhem Vellut
-email = guilhem.vellut@gmail.com
+version = 0.3.0
+author = Takayuki Mizutani
+email = mizutani@ecoris.co.jp
 tags = 
 homepage = 
 tracker = 
